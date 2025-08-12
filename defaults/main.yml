@@ -93,7 +93,7 @@ jenkins_service_state                : 'started'
 jenkins_restarted_state              : 'restarted'
 jenkins_service_enabled              : 'yes'
 jenkins_service_env:
-  PATH+EXTRA: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin'
+  PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:$PATH'
 
 jenkins_docker_cloud: []
 #  - registry: 'docker-hosted-jenkins-snapshot.nexus.inverso.local'
