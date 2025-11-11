@@ -2,7 +2,7 @@
 
 
 - name: check required variables
-  assert:
+  ansible.builtin.assert:
     that:
       - jenkins_user             | mandatory
       - jenkins_group            | mandatory
@@ -11,7 +11,7 @@
   tags: ['varcheck']
 
 - name: Ensure Active Directory configuration is present
-  template:
+  ansible.builtin.template:
     src: 'groovy/configure_active_directory.groovy.j2'
     dest: '{{ jenkins_home }}/init.groovy.d/configure_active_directory.groovy'
     owner: '{{ jenkins_user }}'
@@ -20,7 +20,7 @@
   notify: restart jenkins
 
 - name: Ensure Authorization configuration is present
-  template:
+  ansible.builtin.template:
     src: 'groovy/configure_authorizationstrategy_security.groovy.j2'
     dest: '{{ jenkins_home }}/init.groovy.d/configure_authorizationstrategy_security.groovy'
     owner: '{{ jenkins_user }}'
@@ -33,7 +33,7 @@
   notify: restart jenkins
 
 - name: Ensure docker plugin configuration is present
-  template:
+  ansible.builtin.template:
     src: 'groovy/configure_docker_plugin.groovy.j2'
     dest: '{{ jenkins_home }}/init.groovy.d/configure_docker_plugin.groovy'
     owner: '{{ jenkins_user }}'

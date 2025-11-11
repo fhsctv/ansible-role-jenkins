@@ -1,7 +1,7 @@
 ---
 
 - name: check required variables
-  assert:
+  ansible.builtin.assert:
     that:
       - jenkins_api_url          | mandatory
       - jenkins_user             | mandatory
@@ -12,7 +12,7 @@
   tags: ['varcheck']
 
 - name: Ensure Admin API Token is generated
-  uri:
+  ansible.builtin.uri:
     url: '{{ jenkins_api_url }}/user/{{ jenkins_admin_username }}/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken'
     force_basic_auth: yes
     user: '{{ jenkins_admin_username }}'
@@ -24,5 +24,5 @@
   register: _result_jenkins_api_token
 
 - name: define jenkins admin token
-  set_fact:
+  ansible.builtin.set_fact:
     jenkins_admin_token: '{{ jenkins_admin_username }}:{{ _result_jenkins_api_token.json.data.tokenValue }}'

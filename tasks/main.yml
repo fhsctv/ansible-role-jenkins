@@ -1,7 +1,7 @@
 ---
  
 - name: check required variables
-  assert:
+  ansible.builtin.assert:
     that:
       - jenkins_version                  | mandatory
       - jenkins_user                     | mandatory
@@ -28,7 +28,7 @@
   tags: ['varcheck']
 
 - name: show deploy config
-  debug:
+  ansible.builtin.debug:
     var: _deploy_config
   vars:
     _deploy_config:
@@ -42,12 +42,12 @@
       jenkins_service_enabled: '{{ jenkins_service_enabled }}'
 
 - name: ensure jenkins group exists
-  group: 
+  ansible.builtin.group: 
     name: '{{ jenkins_group }}'
     state: present
 
 - name: ensure jenkins user exists
-  user:
+  ansible.builtin.user:
     name: '{{ jenkins_user }}'
     system: yes
     comment: 'Jenkins'
@@ -57,7 +57,7 @@
     move_home: yes
 
 - name: ensure jenkins_logdir exists
-  file:
+  ansible.builtin.file:
     path: '{{ jenkins_logdir }}'
     state: directory
     owner: '{{ jenkins_user }}'
@@ -65,7 +65,7 @@
     mode : '0755'
 
 - name: ensure jenkins_dir exists
-  file:
+  ansible.builtin.file:
     path: '{{ jenkins_dir }}'
     state: directory
     owner: '{{ jenkins_user }}'
@@ -74,14 +74,14 @@
   notify: set owner and permissions for jenkins_home
 
 - name: 'download {{ jenkins_download_file }}'
-  get_url:
+  ansible.builtin.get_url:
     url: '{{ jenkins_download_baseurl }}/{{ jenkins_download_file }}'    
     dest: '{{ jenkins_download_folder }}'
   notify:
     - restart jenkins
 
 - name: 'ensure jenkins is present in {{ jenkins_dir }}'
-  copy:
+  ansible.builtin.copy:
     remote_src: 'yes'
     src: '{{ jenkins_download_folder }}/{{ jenkins_download_file }}'
     dest: '{{ jenkins_dir }}/{{ jenkins_download_file }}'
@@ -89,7 +89,7 @@
     group: '{{ jenkins_group }}'
 
 - name: 'ensure symlink exists {{ jenkins_dir }}/{{ jenkins_download_file }} -> {{ jenkins_dir }}/{{ jenkins_war_file }}'
-  file:
+  ansible.builtin.file:
     src: '{{ jenkins_dir }}/{{ jenkins_download_file }}'
     dest: '{{ jenkins_dir }}/{{ jenkins_war_file }}'
     state: link
@@ -100,7 +100,7 @@
     - restart jenkins
 
 - name: ensure systemd service is available
-  template:
+  ansible.builtin.template:
     src: templates/jenkins.service.j2
     dest: /etc/systemd/system/jenkins.service
   notify:
@@ -108,7 +108,7 @@
     - restart jenkins
 
 - name: ensure jenkins_home exists
-  file:
+  ansible.builtin.file:
     path: '{{ jenkins_home }}'
     state: directory
     owner: '{{ jenkins_user }}'
@@ -116,7 +116,7 @@
     mode: '0755'
 
 - name: ensure jenkins_home/init.groovy.d exists
-  file:
+  ansible.builtin.file:
     path: '{{ jenkins_home }}/init.groovy.d'
     state: directory
     owner: '{{ jenkins_user }}'
@@ -127,15 +127,15 @@
     - restart jenkins
 
 - name: ensure app server creates jenkins base config
-  meta: flush_handlers
+  ansible.builtin.meta: flush_handlers
 
 - name: Ensure jenkins is up and running
-  systemd:
+  ansible.builtin.systemd:
     name: 'jenkins'
     state: 'started'
 
 - name: wait until base-config is set up by jenkins service
-  stat:
+  ansible.builtin.stat:
     path: '{{ jenkins_home }}'
   register: directory_status
   until: directory_status.stat.isdir is defined and directory_status.stat.isdir
@@ -143,7 +143,7 @@
   delay: 3
 
 - name: Get the jenkins-cli jarfile from the Jenkins server
-  get_url:
+  ansible.builtin.get_url:
     url: '{{ jenkins_api_url }}/jnlpJars/jenkins-cli.jar'
     dest: '{{ jenkins_dir }}'
     owner: '{{ jenkins_user }}'
@@ -154,20 +154,20 @@
   delay: 10
 
 - name: Remove Jenkins security init scripts after first startup.
-  file:
+  ansible.builtin.file:
     path: '{{ jenkins_home }}/init.groovy.d/10_update_admin_password.groovy'
     state: absent
 
 - name: generate jenkins crumb
-  import_tasks: api_generate_crumb.yml
+  ansible.builtin.import_tasks: api_generate_crumb.yml
   tags: ['jenkins.plugins']
 
 - name: generate jenkins admin api token
-  import_tasks: admin_api_token.yml
+  ansible.builtin.import_tasks: admin_api_token.yml
   tags: ['jenkins.plugins']
 
 - name: check for running builds
-  uri:
+  ansible.builtin.uri:
     url: '{{ jenkins_api_url }}/computer/api/json?tree=busyExecutors,computer'
     force_basic_auth: yes
     user: '{{ jenkins_admin_username }}'
@@ -181,16 +181,16 @@
   until: _return_running_builds is not failed
   tags: ['jenkins.plugins']
 
-- debug: var=_return_running_builds
+- ansible.builtin.debug: var=_return_running_builds
   tags: ['jenkins.plugins']
 
 - name: 'end playbook for {{ inventory_hostname }} as it is running build jobs right now'
-  meta: end_host
+  ansible.builtin.meta: end_host
   when: _return_running_builds.json.busyExecutors | default(0) | int > 0 #or _return_running_builds.json.computer | default([]) | length | int > 1
   tags: ['jenkins.plugins']
 
 - name: ensure jenkins is in maintenance mode
-  uri:
+  ansible.builtin.uri:
     url: '{{ jenkins_api_url }}/quietDown'
     force_basic_auth: yes
     user: '{{ jenkins_admin_username }}'
@@ -204,24 +204,24 @@
   until: _return_maintenance_mode is not failed
   tags: ['jenkins.plugins']
 
-- import_tasks: configure.yml
+- ansible.builtin.import_tasks: configure.yml
   tags: jenkins.configure
   
-- import_tasks: plugins.yml
+- ansible.builtin.import_tasks: plugins.yml
   tags: ['jenkins.plugins']
 
-- import_tasks: configure_plugins.yml
+- ansible.builtin.import_tasks: configure_plugins.yml
   tags: jenkins.configure_plugins
 
 - name: ensure jenkins is enabled or started
-  systemd:
+  ansible.builtin.systemd:
     name: 'jenkins'
     state: '{{ jenkins_service_state }}'
     enabled: '{{ jenkins_service_enabled }}'
   notify: systemctl daemon-reload
 
 - name: ensure jenkins maintenance mode is disabled
-  uri:
+  ansible.builtin.uri:
     url: '{{ jenkins_api_url }}/cancelQuietDown'
     force_basic_auth: yes
     user: '{{ jenkins_admin_username }}'
