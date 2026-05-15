@@ -85,7 +85,7 @@ jenkins_systemproperties             : ''
 jenkins_java_install_jce             : 'no'   # yes | no
 jenkins_java_bin                     : '/usr/bin/java'
 
-jenkins_api_url                      : 'http://localhost:{{ jenkins_local_http_port }}{{ jenkins_webappcontextpath }}'
+jenkins_api_url                      : 'https://{{ inventory_hostname}}{{ jenkins_webappcontextpath }}'
 jenkins_cli_cmd                      : '{{ jenkins_java_bin }} -jar {{ jenkins_dir }}/jenkins-cli.jar -s {{ jenkins_api_url }}'
 jenkins_cli_remote_enabled           : 'false'
 
